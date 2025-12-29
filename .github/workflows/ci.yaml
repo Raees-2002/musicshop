@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  IMAGE_NAME: musicshop
+  IMAGE_NAME: musicshop:latest
   CONTAINER_NAME: orbisstore
 
 jobs:

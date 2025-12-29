@@ -1,79 +1,32 @@
-name: CI-CD Pipeline
+script: |
+  set -x
+  echo "===== DEPLOYMENT STARTED ====="
 
-on:
-  push:
-    branches:
-      - main
+  echo "Who am I?"
+  whoami
 
-env:
-  IMAGE_NAME: musicshop
-  CONTAINER_NAME: orbisstore
+  echo "Docker version:"
+  docker --version
 
-jobs:
-  build-test-push:
-    runs-on: ubuntu-latest
+  echo "Logging into Docker Hub..."
+  echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  echo "Pulling image..."
+  docker pull ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:latest
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+  echo "Stopping container..."
+  docker stop $CONTAINER_NAME || true
+  docker rm $CONTAINER_NAME || true
 
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:latest .
+  echo "Running container..."
+  docker run -d \
+    --restart unless-stopped \
+    --name $CONTAINER_NAME \
+    -p 80:80 \
+    ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:latest
 
-      - name: Run container for health check
-        run: |
-          docker run -d \
-            --name test_container \
-            -p 8080:80 \
-            ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:latest
+  echo "Health check..."
+  sleep 5
+  curl -f http://localhost
 
-          sleep 5
-          curl -f http://localhost:8080
-
-      - name: Cleanup test container
-        if: always()
-        run: |
-          docker rm -f test_container || true
-
-      - name: Push Docker image
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:latest
-
-  deploy:
-    needs: build-test-push
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
-
-            echo "===== DEPLOYMENT STARTED ====="
-            echo "${{ secrets.DOCKER_PASSWORD}}" | docker login -u "${{ secrets.DOCKER_USERNAME}}" --password-stdin
-            docker pull ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:latest
-
-            docker stop $CONTAINER_NAME || true
-            docker rm $CONTAINER_NAME || true
-
-            docker run -d \
-              --restart unless-stopped \
-              --name $CONTAINER_NAME \
-              -p 80:80 \
-              ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:latest
-
-            sleep 5
-            curl -f http://localhost
-
-            echo "===== DEPLOYMENT SUCCESSFUL ====="
+  echo "===== DEPLOYMENT SUCCESSFUL ====="

@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI-CD Pipeline
 
 on:
   push:
@@ -30,24 +30,23 @@ jobs:
       - name: Run container for health check
         run: |
           docker run -d \
-            --name $CONTAINER_NAME \
+            --name test_container \
             -p 8080:80 \
             ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:latest
 
           sleep 5
-
           curl -f http://localhost:8080
 
       - name: Cleanup test container
         if: always()
         run: |
-          docker rm -f $CONTAINER_NAME || true
+          docker rm -f test_container || true
 
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:latest
 
-    deploy:
+  deploy:
     needs: build-test-push
     runs-on: ubuntu-latest
 
@@ -75,7 +74,6 @@ jobs:
               ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:latest
 
             sleep 5
-
             curl -f http://localhost
 
             echo "===== DEPLOYMENT SUCCESSFUL ====="

@@ -46,11 +46,11 @@ jobs:
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
-        envs: IMAGE_TAG,IMAGE_NAME,CONTAINER_NAME
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: IMAGE_TAG,IMAGE_NAME,CONTAINER_NAME
           script: |
             set -e
             echo "Deploying image tag: $IMAGE_TAG"
@@ -69,3 +69,4 @@ jobs:
               ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$IMAGE_TAG
 
             curl -f http://localhost
+  

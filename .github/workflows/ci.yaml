@@ -39,7 +39,7 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:${IMAGE_TAG}
 
-    deploy:
+  deploy:
     needs: build-test-push
     runs-on: ubuntu-latest
 

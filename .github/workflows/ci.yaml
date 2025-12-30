@@ -68,5 +68,7 @@ jobs:
               -p 80:80 \
               ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$IMAGE_TAG
 
+            echo "Waiting for container to be ready..."
+            sleep 10
+
             curl -f http://localhost
-  
